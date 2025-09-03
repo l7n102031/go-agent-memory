@@ -1,30 +1,32 @@
-package memory
+package memory_test
 
 import (
 	"context"
 	"fmt"
 	"testing"
 	"time"
+	
+	memory "github.com/framehood/go-agent-memory"
 )
 
 // MockMemory implements Memory interface for testing
 type MockMemory struct {
-	messages []Message
+	messages []memory.Message
 }
 
-func NewMockMemory() Memory {
+func NewMockMemory() memory.Memory {
 	return &MockMemory{
-		messages: make([]Message, 0),
+		messages: make([]memory.Message, 0),
 	}
 }
 
-func (m *MockMemory) AddMessage(ctx context.Context, msg Message) error {
+func (m *MockMemory) AddMessage(ctx context.Context, msg memory.Message) error {
 	m.messages = append(m.messages, msg)
 	return nil
 }
 
-func (m *MockMemory) GetRecentMessages(ctx context.Context, sessionID string, limit int) ([]Message, error) {
-	var result []Message
+func (m *MockMemory) GetRecentMessages(ctx context.Context, sessionID string, limit int) ([]memory.Message, error) {
+	var result []memory.Message
 	for _, msg := range m.messages {
 		if msg.Metadata.SessionID == sessionID {
 			result = append(result, msg)
@@ -37,7 +39,7 @@ func (m *MockMemory) GetRecentMessages(ctx context.Context, sessionID string, li
 }
 
 func (m *MockMemory) ClearSession(ctx context.Context, sessionID string) error {
-	var filtered []Message
+	var filtered []memory.Message
 	for _, msg := range m.messages {
 		if msg.Metadata.SessionID != sessionID {
 			filtered = append(filtered, msg)
@@ -47,18 +49,18 @@ func (m *MockMemory) ClearSession(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-func (m *MockMemory) Store(ctx context.Context, msg Message) error {
+func (m *MockMemory) Store(ctx context.Context, msg memory.Message) error {
 	return m.AddMessage(ctx, msg)
 }
 
-func (m *MockMemory) Search(ctx context.Context, query string, limit int, threshold float32) ([]SearchResult, error) {
+func (m *MockMemory) Search(ctx context.Context, query string, limit int, threshold float32) ([]memory.SearchResult, error) {
 	// Simple mock search - just return first messages
-	var results []SearchResult
+	var results []memory.SearchResult
 	for i, msg := range m.messages {
 		if i >= limit {
 			break
 		}
-		results = append(results, SearchResult{
+		results = append(results, memory.SearchResult{
 			Message:  msg,
 			Score:    0.9,
 			Distance: 0.1,
@@ -67,19 +69,19 @@ func (m *MockMemory) Search(ctx context.Context, query string, limit int, thresh
 	return results, nil
 }
 
-func (m *MockMemory) SearchWithEmbedding(ctx context.Context, embedding []float32, limit int, threshold float32) ([]SearchResult, error) {
+func (m *MockMemory) SearchWithEmbedding(ctx context.Context, embedding []float32, limit int, threshold float32) ([]memory.SearchResult, error) {
 	return m.Search(ctx, "", limit, threshold)
 }
 
 func (m *MockMemory) Summarize(ctx context.Context, sessionID string, maxTokens int) (string, error) {
-	messages, _ := m.GetRecentMessages(ctx, sessionID, 100)
+	messages, _ := m.GetRecentMessages(ctx, sessionID, 100) // Get up to 100 messages
 	if len(messages) == 0 {
 		return "", nil
 	}
 	return "Mock summary of conversation", nil
 }
 
-func (m *MockMemory) GetStats(ctx context.Context, sessionID string) (*Stats, error) {
+func (m *MockMemory) GetStats(ctx context.Context, sessionID string) (*memory.Stats, error) {
 	count := 0
 	for _, msg := range m.messages {
 		if msg.Metadata.SessionID == sessionID {
@@ -87,7 +89,7 @@ func (m *MockMemory) GetStats(ctx context.Context, sessionID string) (*Stats, er
 		}
 	}
 	
-	return &Stats{
+	return &memory.Stats{
 		SessionID:       sessionID,
 		TotalMessages:   len(m.messages),
 		SessionMessages: count,
@@ -108,11 +110,11 @@ func TestMockMemory(t *testing.T) {
 	sessionID := "test-session"
 	
 	// Test adding a message
-	msg := Message{
+	msg := memory.Message{
 		ID:      "msg-1",
 		Role:    "user",
 		Content: "Hello, world!",
-		Metadata: Metadata{
+		Metadata: memory.Metadata{
 			SessionID: sessionID,
 		},
 		Timestamp: time.Now(),
@@ -170,7 +172,7 @@ func TestMockMemory(t *testing.T) {
 }
 
 func TestMessageMetadata(t *testing.T) {
-	metadata := Metadata{
+	metadata := memory.Metadata{
 		SessionID:   "session-123",
 		UserID:      "user-456",
 		TokenCount:  100,
@@ -194,11 +196,11 @@ func BenchmarkAddMessage(b *testing.B) {
 	mem := NewMockMemory()
 	ctx := context.Background()
 	
-	msg := Message{
+	msg := memory.Message{
 		ID:      "msg-bench",
 		Role:    "user",
 		Content: "Benchmark message",
-		Metadata: Metadata{
+		Metadata: memory.Metadata{
 			SessionID: "bench-session",
 		},
 		Timestamp: time.Now(),
@@ -217,11 +219,11 @@ func BenchmarkGetRecentMessages(b *testing.B) {
 	
 	// Add some messages
 	for i := 0; i < 100; i++ {
-		mem.AddMessage(ctx, Message{
+		mem.AddMessage(ctx, memory.Message{
 			ID:      fmt.Sprintf("msg-%d", i),
 			Role:    "user",
 			Content: "Test message",
-			Metadata: Metadata{
+			Metadata: memory.Metadata{
 				SessionID: sessionID,
 			},
 		})

@@ -15,6 +15,34 @@ A modular, production-ready memory system for AI agents with semantic search cap
 - **🔌 Modular Design**: Use as a simple import, doesn't affect your app if not used
 - **⚡ Production Ready**: Connection pooling, error handling, and graceful degradation
 
+## Documentation 📚
+
+- [**Architecture Overview**](docs/ARCHITECTURE.md) - System design and data flow
+- [**Integration Guide**](docs/INTEGRATE_WITH_AGENT.md) - Step-by-step agent integration
+- [**Summary**](docs/SUMMARY.md) - Quick overview and key features
+
+## Repository Structure 📁
+
+```
+go-agent-memory/
+├── memory.go           # Core interfaces and types
+├── supabase.go        # Supabase/pgvector implementation
+├── hybrid.go          # Redis + Supabase hybrid
+├── docs/              # Documentation
+│   ├── ARCHITECTURE.md
+│   ├── INTEGRATE_WITH_AGENT.md
+│   └── SUMMARY.md
+├── tests/             # Test files
+│   └── memory_test.go
+├── examples/          # Usage examples
+│   └── integration.go
+├── scripts/           # Utility scripts
+│   └── quickstart.sh
+└── deployment/        # Deployment configs
+    ├── docker-compose.yml
+    └── init.sql
+```
+
 ## Quick Start 🚀
 
 ### 1. Install the Package
@@ -25,7 +53,7 @@ go get github.com/framehood/go-agent-memory
 
 ### 2. Set Up Supabase
 
-Since you already have Supabase, just ensure pgvector is enabled:
+Ensure pgvector is enabled in your Supabase instance:
 
 ```sql
 -- Run this in Supabase SQL Editor

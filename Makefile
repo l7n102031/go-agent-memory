@@ -11,7 +11,7 @@ build: ## Build the package
 	go build -v ./...
 
 test: ## Run tests
-	go test -v -race -coverprofile=coverage.out ./...
+	go test -v -race -coverprofile=coverage.out ./... ./tests/...
 
 coverage: test ## Show test coverage
 	go tool cover -html=coverage.out
@@ -21,13 +21,13 @@ lint: ## Run linters
 	golangci-lint run
 
 example: ## Run the example
-	cd example && go run integration.go
+	cd examples && go run integration.go
 
 docker-deps: ## Start Redis and PostgreSQL for testing
-	docker-compose up -d
+	cd deployment && docker-compose up -d
 
 docker-stop: ## Stop test dependencies
-	docker-compose down
+	cd deployment && docker-compose down
 
 install: ## Install the package locally
 	go install ./...
