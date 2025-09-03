@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 	
 	memory "github.com/framehood/go-agent-memory"

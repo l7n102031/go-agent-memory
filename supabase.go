@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
@@ -391,7 +392,23 @@ func (sm *SupabaseMemory) GetStats(ctx context.Context, sessionID string) (*Stat
 		&stats.StorageSize,
 	)
 	
-	return stats, err
+	if err != nil {
+		return stats, err
+	}
+	
+	// Check if session has summary
+	var summaryCount int
+	sm.db.QueryRow(ctx, `
+		SELECT COUNT(*) FROM agent_summaries WHERE session_id = $1
+	`, sessionID).Scan(&summaryCount)
+	
+	stats.HasSummary = summaryCount > 0
+	
+	// Calculate token counts (rough estimation)
+	stats.TotalTokens = int(stats.StorageSize / 4) // 4 chars per token
+	stats.ActiveTokens = stats.TotalTokens         // Same unless summarized
+	
+	return stats, nil
 }
 
 // generateEmbedding creates an embedding for text using OpenAI
@@ -432,6 +449,59 @@ func (sm *SupabaseMemory) generateEmbedding(ctx context.Context, text string) ([
 }
 
 // Close closes database connections
+// GetSummary retrieves a summary for the session
+func (sm *SupabaseMemory) GetSummary(ctx context.Context, sessionID string) (*Summary, error) {
+	// Try to get existing summary first
+	query := `
+		SELECT session_id, summary, token_count, message_count, start_time, end_time, created_at
+		FROM agent_summaries 
+		WHERE session_id = $1 
+		ORDER BY created_at DESC 
+		LIMIT 1`
+	
+	var summary Summary
+	err := sm.db.QueryRow(ctx, query, sessionID).Scan(
+		&summary.SessionID,
+		&summary.Content,
+		&summary.TokenCount,
+		&summary.MessageCount,
+		&summary.StartTime,
+		&summary.EndTime,
+		&summary.Created,
+	)
+	
+	if err == nil {
+		return &summary, nil
+	}
+	
+	// If no summary exists, create one
+	summaryText, err := sm.Summarize(ctx, sessionID, 500)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate summary: %w", err)
+	}
+	
+	// Get session bounds
+	var startTime, endTime time.Time
+	var messageCount int
+	
+	boundsQuery := `
+		SELECT MIN(created_at), MAX(created_at), COUNT(*)
+		FROM agent_messages 
+		WHERE session_id = $1`
+	
+	sm.db.QueryRow(ctx, boundsQuery, sessionID).Scan(&startTime, &endTime, &messageCount)
+	
+	return &Summary{
+		SessionID:    sessionID,
+		Content:      summaryText,
+		TokenCount:   len(summaryText) / 4, // Rough estimation
+		MessageCount: messageCount,
+		StartTime:    startTime,
+		EndTime:      endTime,
+		Created:      time.Now(),
+	}, nil
+}
+
 func (sm *SupabaseMemory) Close() error {
 	sm.db.Close()
 	return nil

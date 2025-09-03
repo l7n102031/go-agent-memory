@@ -400,19 +400,4 @@ func contains(text, keyword string) bool {
 		(text == keyword || len(text) > len(keyword))
 }
 
-// Mock summary type for demonstration
-type Summary struct {
-	Content    string
-	TokenCount int
-	Created    time.Time
-}
-
-// Extension for summary retrieval (would be part of actual implementation)
-func (m memory.Memory) GetSummary(ctx context.Context, sessionID string) (*Summary, error) {
-	// This would retrieve the actual summary from the database
-	return &Summary{
-		Content: `Alice from TechCorp reported performance issues with their payment processing system handling 10,000 daily transactions. After upgrading from PostgreSQL 12 to 14, latency increased from 100ms to 500ms. The main issue involves JOIN queries on a 50 million row orders table. Recommended solutions include table partitioning by date and index optimization.`,
-		TokenCount: 67,
-		Created:    time.Now(),
-	}, nil
-}
+// GetSummary is now implemented in the actual Memory implementations

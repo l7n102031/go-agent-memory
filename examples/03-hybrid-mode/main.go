@@ -111,7 +111,9 @@ func main() {
 	// Clear Redis to test database read
 	// In production, this would happen after TTL expires
 	fmt.Println("\n   Simulating cache miss...")
-	mem.(*memory.HybridMemory).ClearCache(ctx, sessionID)
+	if hybridMem, ok := mem.(*memory.HybridMemory); ok {
+		hybridMem.ClearCache(ctx, sessionID)
+	}
 	
 	start = time.Now()
 	messages, _ = mem.GetRecentMessages(ctx, sessionID, 10)
@@ -204,12 +206,20 @@ func main() {
 	fmt.Println("📈 Cache Statistics")
 	fmt.Println("───────────────────")
 	
-	cacheStats := mem.(*memory.HybridMemory).GetCacheStats(ctx)
-	fmt.Printf("   Cache hits: %d\n", cacheStats.Hits)
-	fmt.Printf("   Cache misses: %d\n", cacheStats.Misses)
-	fmt.Printf("   Hit rate: %.1f%%\n", float64(cacheStats.Hits)/float64(cacheStats.Hits+cacheStats.Misses)*100)
-	fmt.Printf("   Cached sessions: %d\n", cacheStats.SessionCount)
-	fmt.Printf("   Cache memory usage: ~%d KB\n", cacheStats.MemoryUsage/1024)
+	if hybridMem, ok := mem.(*memory.HybridMemory); ok {
+		cacheStats, err := hybridMem.GetCacheStats(ctx)
+		if err != nil {
+			fmt.Printf("   Error getting cache stats: %v\n", err)
+		} else {
+			fmt.Printf("   Cache hits: %d\n", cacheStats.Hits)
+			fmt.Printf("   Cache misses: %d\n", cacheStats.Misses)
+			if cacheStats.Hits+cacheStats.Misses > 0 {
+				fmt.Printf("   Hit rate: %.1f%%\n", float64(cacheStats.Hits)/float64(cacheStats.Hits+cacheStats.Misses)*100)
+			}
+			fmt.Printf("   Cached sessions: %d\n", cacheStats.SessionCount)
+			fmt.Printf("   Cache memory usage: ~%d KB\n", cacheStats.MemoryUsage/1024)
+		}
+	}
 	fmt.Println()
 	
 	// Demonstrate failover behavior
@@ -275,33 +285,4 @@ func generateConversationContent(index int) string {
 	return topics[index%len(topics)]
 }
 
-// Mock cache stats for demonstration
-type CacheStats struct {
-	Hits         int
-	Misses       int
-	SessionCount int
-	MemoryUsage  int
-}
-
-// Extension methods (these would be part of the actual implementation)
-type HybridMemoryExtensions interface {
-	memory.Memory
-	ClearCache(ctx context.Context, sessionID string) error
-	GetCacheStats(ctx context.Context) CacheStats
-}
-
-// Mock implementation for demo
-func (m *memory.HybridMemory) ClearCache(ctx context.Context, sessionID string) error {
-	// This would actually clear the Redis cache for the session
-	return nil
-}
-
-func (m *memory.HybridMemory) GetCacheStats(ctx context.Context) CacheStats {
-	// This would return actual Redis statistics
-	return CacheStats{
-		Hits:         42,
-		Misses:       8,
-		SessionCount: 3,
-		MemoryUsage:  1024 * 50, // 50KB
-	}
-}
+// These methods are now implemented in the actual HybridMemory type
