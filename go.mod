@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/jackc/pgx/v5 v5.7.5
+	github.com/openai/openai-go/v2 v2.2.2
 	github.com/pgvector/pgvector-go v0.3.0
 	github.com/redis/go-redis/v9 v9.6.3
 	github.com/sashabaranov/go-openai v1.41.1
@@ -15,7 +16,6 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/openai/openai-go/v2 v2.2.2 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

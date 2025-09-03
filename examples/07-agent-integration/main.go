@@ -298,8 +298,8 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 	
 	// Call OpenAI API
 	completion, err := a.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-		Model:       openai.String(a.config.Model),
-		Messages:    openai.F(messages),
+		Model:       openai.ChatModel(a.config.Model),
+		Messages:    messages,
 		Temperature: openai.Float(a.config.Temperature),
 		MaxTokens:   openai.Int(int64(a.config.MaxTokens)),
 	})
