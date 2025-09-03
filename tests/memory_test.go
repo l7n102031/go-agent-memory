@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 	"time"
-	
+
 	memory "github.com/framehood/go-agent-memory"
 )
 
@@ -88,7 +88,7 @@ func (m *MockMemory) GetStats(ctx context.Context, sessionID string) (*memory.St
 			count++
 		}
 	}
-	
+
 	return &memory.Stats{
 		SessionID:       sessionID,
 		TotalMessages:   len(m.messages),
@@ -108,7 +108,7 @@ func TestMockMemory(t *testing.T) {
 	mem := NewMockMemory()
 	ctx := context.Background()
 	sessionID := "test-session"
-	
+
 	// Test adding a message
 	msg := memory.Message{
 		ID:      "msg-1",
@@ -119,52 +119,52 @@ func TestMockMemory(t *testing.T) {
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	err := mem.AddMessage(ctx, msg)
 	if err != nil {
 		t.Fatalf("Failed to add message: %v", err)
 	}
-	
+
 	// Test retrieving messages
 	messages, err := mem.GetRecentMessages(ctx, sessionID, 10)
 	if err != nil {
 		t.Fatalf("Failed to get messages: %v", err)
 	}
-	
+
 	if len(messages) != 1 {
 		t.Errorf("Expected 1 message, got %d", len(messages))
 	}
-	
+
 	if messages[0].Content != "Hello, world!" {
 		t.Errorf("Expected content 'Hello, world!', got %s", messages[0].Content)
 	}
-	
+
 	// Test stats
 	stats, err := mem.GetStats(ctx, sessionID)
 	if err != nil {
 		t.Fatalf("Failed to get stats: %v", err)
 	}
-	
+
 	if stats.TotalMessages != 1 {
 		t.Errorf("Expected 1 total message, got %d", stats.TotalMessages)
 	}
-	
+
 	// Test search
 	results, err := mem.Search(ctx, "hello", 5, 0.7)
 	if err != nil {
 		t.Fatalf("Failed to search: %v", err)
 	}
-	
+
 	if len(results) != 1 {
 		t.Errorf("Expected 1 search result, got %d", len(results))
 	}
-	
+
 	// Test clear session
 	err = mem.ClearSession(ctx, sessionID)
 	if err != nil {
 		t.Fatalf("Failed to clear session: %v", err)
 	}
-	
+
 	messages, _ = mem.GetRecentMessages(ctx, sessionID, 10)
 	if len(messages) != 0 {
 		t.Errorf("Expected 0 messages after clear, got %d", len(messages))
@@ -182,11 +182,11 @@ func TestMessageMetadata(t *testing.T) {
 			"custom_field": "value",
 		},
 	}
-	
+
 	if metadata.SessionID != "session-123" {
 		t.Errorf("Expected session ID 'session-123', got %s", metadata.SessionID)
 	}
-	
+
 	if metadata.Extra["custom_field"] != "value" {
 		t.Errorf("Expected custom field 'value', got %v", metadata.Extra["custom_field"])
 	}
@@ -195,7 +195,7 @@ func TestMessageMetadata(t *testing.T) {
 func BenchmarkAddMessage(b *testing.B) {
 	mem := NewMockMemory()
 	ctx := context.Background()
-	
+
 	msg := memory.Message{
 		ID:      "msg-bench",
 		Role:    "user",
@@ -205,7 +205,7 @@ func BenchmarkAddMessage(b *testing.B) {
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mem.AddMessage(ctx, msg)
@@ -216,7 +216,7 @@ func BenchmarkGetRecentMessages(b *testing.B) {
 	mem := NewMockMemory()
 	ctx := context.Background()
 	sessionID := "bench-session"
-	
+
 	// Add some messages
 	for i := 0; i < 100; i++ {
 		mem.AddMessage(ctx, memory.Message{
@@ -228,7 +228,7 @@ func BenchmarkGetRecentMessages(b *testing.B) {
 			},
 		})
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mem.GetRecentMessages(ctx, sessionID, 10)
