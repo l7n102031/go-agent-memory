@@ -6,7 +6,7 @@ First, update your agent's `go.mod`:
 
 ```bash
 cd /Users/kirillshidenko/framehood/agent
-go get github.com/kshidenko/go-agent-memory
+go get github.com/framehood/go-agent-memory
 ```
 
 ## 2. Update Your main.go
@@ -17,7 +17,7 @@ Add these changes to your existing `/Users/kirillshidenko/framehood/agent/main.g
 // Add import at the top
 import (
     // ... existing imports ...
-    memory "github.com/kshidenko/go-agent-memory"
+    memory "github.com/framehood/go-agent-memory"
 )
 
 // Add after your configuration constants

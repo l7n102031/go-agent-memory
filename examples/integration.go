@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 	"time"
-	
-	memory "github.com/kshidenko/go-agent-memory"
+
+	memory "github.com/framehood/go-agent-memory"
 )
 
 // Example showing how to integrate memory with an AI agent
@@ -20,11 +20,11 @@ func main() {
 		defer mem.Close()
 		fmt.Println("Memory initialized successfully!")
 	}
-	
+
 	// Simulate a conversation
 	sessionID := "demo-session-001"
 	userID := "demo-user"
-	
+
 	// Example 1: Add messages to memory
 	if mem != nil {
 		// User message
@@ -42,7 +42,7 @@ func main() {
 		if err != nil {
 			log.Printf("Error adding message: %v", err)
 		}
-		
+
 		// Assistant response
 		err = mem.AddMessage(context.Background(), memory.Message{
 			ID:      "msg-002",
@@ -61,7 +61,7 @@ func main() {
 			log.Printf("Error adding message: %v", err)
 		}
 	}
-	
+
 	// Example 2: Retrieve recent messages
 	if mem != nil {
 		fmt.Println("\n📚 Recent Messages:")
@@ -74,7 +74,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	// Example 3: Semantic search
 	if mem != nil {
 		fmt.Println("\n🔍 Semantic Search for 'travel Japan':")
@@ -87,7 +87,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	// Example 4: Get statistics
 	if mem != nil {
 		fmt.Println("\n📊 Memory Statistics:")
@@ -100,7 +100,7 @@ func main() {
 			fmt.Printf("  Total Tokens: %d\n", stats.TotalTokens)
 		}
 	}
-	
+
 	// Example 5: Generate summary (for long conversations)
 	if mem != nil {
 		fmt.Println("\n📝 Generating Summary:")
@@ -118,36 +118,36 @@ func initializeMemory() memory.Memory {
 	// Check for required environment variables
 	dbURL := os.Getenv("DATABASE_URL")
 	openAIKey := os.Getenv("OPENAI_API_KEY")
-	
+
 	if dbURL == "" || openAIKey == "" {
 		fmt.Println("⚠️  Memory disabled: Set DATABASE_URL and OPENAI_API_KEY to enable")
 		return nil
 	}
-	
+
 	// Create configuration
 	config := memory.Config{
 		DatabaseURL:    dbURL,
 		OpenAIKey:      openAIKey,
 		EmbeddingModel: "text-embedding-3-small",
-		
+
 		// Optional: Add Redis for faster session access
 		RedisAddr:     os.Getenv("REDIS_URL"),
 		RedisPassword: os.Getenv("REDIS_PASSWORD"),
-		
+
 		// Memory settings
 		MaxSessionMessages: 50,
-		SessionTTL:        24 * time.Hour,
-		AutoSummarize:     true,
-		VectorDimension:   1536,
+		SessionTTL:         24 * time.Hour,
+		AutoSummarize:      true,
+		VectorDimension:    1536,
 	}
-	
+
 	// Initialize memory
 	mem, err := memory.New(config)
 	if err != nil {
 		log.Printf("Failed to initialize memory: %v", err)
 		return nil
 	}
-	
+
 	return mem
 }
 

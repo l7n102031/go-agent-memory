@@ -49,7 +49,7 @@ go-agent-memory/
 
 **1. Add to your agent:**
 ```go
-import memory "github.com/kshidenko/go-agent-memory"
+import memory "github.com/framehood/go-agent-memory"
 
 var mem memory.Memory
 
@@ -99,7 +99,7 @@ if mem != nil {
    git init
    git add .
    git commit -m "Initial memory module"
-   git remote add origin https://github.com/kshidenko/go-agent-memory
+   git remote add origin https://github.com/framehood/go-agent-memory
    git push -u origin main
    ```
 
