@@ -286,13 +286,6 @@ export SUPABASE_ANON_KEY="eyJ..."
 - Message storage: **~20-30ms**
 - Semantic search: **~50-100ms**
 
-## Cost Analysis 💰
-
-For **1000 daily active users**:
-- **Redis + Supabase**: ~$120/month ($0.12/user)
-- **Supabase Only**: ~$80/month ($0.08/user)
-- **Embeddings**: ~$0.02/1000 messages
-
 ## Database Schema 📊
 
 The package automatically creates these tables:
