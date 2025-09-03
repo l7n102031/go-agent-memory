@@ -29,25 +29,25 @@ func NewSessionOnlyMemory(cfg Config) (Memory, error) {
 func (sm *SessionOnlyMemory) AddMessage(ctx context.Context, msg Message) error {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	
+
 	sessionID := msg.Metadata.SessionID
 	if sessionID == "" {
 		return fmt.Errorf("session ID is required")
 	}
-	
+
 	// Add message to session
 	sm.sessions[sessionID] = append(sm.sessions[sessionID], msg)
-	
+
 	// Enforce message limit
 	if len(sm.sessions[sessionID]) > sm.config.MaxSessionMessages {
 		// Keep only the most recent messages
 		start := len(sm.sessions[sessionID]) - sm.config.MaxSessionMessages
 		sm.sessions[sessionID] = sm.sessions[sessionID][start:]
 	}
-	
+
 	// Update stats
 	sm.updateStats(sessionID)
-	
+
 	return nil
 }
 
@@ -55,21 +55,21 @@ func (sm *SessionOnlyMemory) AddMessage(ctx context.Context, msg Message) error 
 func (sm *SessionOnlyMemory) GetRecentMessages(ctx context.Context, sessionID string, limit int) ([]Message, error) {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	
+
 	messages, exists := sm.sessions[sessionID]
 	if !exists {
 		return []Message{}, nil
 	}
-	
+
 	// Return the most recent messages up to limit
 	start := 0
 	if len(messages) > limit {
 		start = len(messages) - limit
 	}
-	
+
 	result := make([]Message, len(messages)-start)
 	copy(result, messages[start:])
-	
+
 	return result, nil
 }
 
@@ -77,10 +77,10 @@ func (sm *SessionOnlyMemory) GetRecentMessages(ctx context.Context, sessionID st
 func (sm *SessionOnlyMemory) ClearSession(ctx context.Context, sessionID string) error {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	
+
 	delete(sm.sessions, sessionID)
 	delete(sm.stats, sessionID)
-	
+
 	return nil
 }
 
@@ -93,9 +93,9 @@ func (sm *SessionOnlyMemory) Store(ctx context.Context, msg Message) error {
 func (sm *SessionOnlyMemory) Search(ctx context.Context, query string, limit int, threshold float32) ([]SearchResult, error) {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	
+
 	var results []SearchResult
-	
+
 	// Simple text matching across all sessions
 	for _, messages := range sm.sessions {
 		for _, msg := range messages {
@@ -111,17 +111,17 @@ func (sm *SessionOnlyMemory) Search(ctx context.Context, query string, limit int
 			}
 		}
 	}
-	
+
 	// Sort by score descending
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Score > results[j].Score
 	})
-	
+
 	// Limit results
 	if len(results) > limit {
 		results = results[:limit]
 	}
-	
+
 	return results, nil
 }
 
@@ -134,16 +134,16 @@ func (sm *SessionOnlyMemory) SearchWithEmbedding(ctx context.Context, embedding 
 func (sm *SessionOnlyMemory) Summarize(ctx context.Context, sessionID string, maxTokens int) (string, error) {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	
+
 	messages, exists := sm.sessions[sessionID]
 	if !exists || len(messages) == 0 {
 		return "", fmt.Errorf("no messages found for session %s", sessionID)
 	}
-	
+
 	// Simple summary: count messages by role
 	userMessages := 0
 	assistantMessages := 0
-	
+
 	for _, msg := range messages {
 		switch msg.Role {
 		case "user":
@@ -152,10 +152,10 @@ func (sm *SessionOnlyMemory) Summarize(ctx context.Context, sessionID string, ma
 			assistantMessages++
 		}
 	}
-	
-	summary := fmt.Sprintf("Session contains %d messages: %d from user, %d from assistant", 
+
+	summary := fmt.Sprintf("Session contains %d messages: %d from user, %d from assistant",
 		len(messages), userMessages, assistantMessages)
-	
+
 	return summary, nil
 }
 
@@ -163,20 +163,20 @@ func (sm *SessionOnlyMemory) Summarize(ctx context.Context, sessionID string, ma
 func (sm *SessionOnlyMemory) GetSummary(ctx context.Context, sessionID string) (*Summary, error) {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	
+
 	messages, exists := sm.sessions[sessionID]
 	if !exists || len(messages) == 0 {
 		return nil, fmt.Errorf("no messages found for session %s", sessionID)
 	}
-	
+
 	content, _ := sm.Summarize(ctx, sessionID, 0)
-	
+
 	var startTime, endTime time.Time
 	if len(messages) > 0 {
 		startTime = messages[0].Timestamp
 		endTime = messages[len(messages)-1].Timestamp
 	}
-	
+
 	return &Summary{
 		SessionID:    sessionID,
 		Content:      content,
@@ -192,11 +192,11 @@ func (sm *SessionOnlyMemory) GetSummary(ctx context.Context, sessionID string) (
 func (sm *SessionOnlyMemory) GetStats(ctx context.Context, sessionID string) (*Stats, error) {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()
-	
+
 	if stats, exists := sm.stats[sessionID]; exists {
 		return stats, nil
 	}
-	
+
 	// Generate stats if not cached
 	sm.updateStats(sessionID)
 	return sm.stats[sessionID], nil
@@ -206,11 +206,11 @@ func (sm *SessionOnlyMemory) GetStats(ctx context.Context, sessionID string) (*S
 func (sm *SessionOnlyMemory) Close() error {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
-	
+
 	// Clear all data
 	sm.sessions = make(map[string][]Message)
 	sm.stats = make(map[string]*Stats)
-	
+
 	return nil
 }
 
@@ -221,14 +221,14 @@ func (sm *SessionOnlyMemory) updateStats(sessionID string) {
 	if !exists {
 		return
 	}
-	
+
 	stats := &Stats{
 		SessionID:       sessionID,
 		TotalMessages:   len(messages),
 		SessionMessages: len(messages),
 		HasSummary:      false, // No real summarization in session-only
 	}
-	
+
 	// Calculate total tokens (rough estimation)
 	totalTokens := 0
 	for _, msg := range messages {
@@ -236,7 +236,7 @@ func (sm *SessionOnlyMemory) updateStats(sessionID string) {
 	}
 	stats.TotalTokens = totalTokens
 	stats.ActiveTokens = totalTokens
-	
+
 	// Set time bounds
 	if len(messages) > 0 {
 		oldest := messages[0].Timestamp
@@ -244,19 +244,19 @@ func (sm *SessionOnlyMemory) updateStats(sessionID string) {
 		stats.OldestMessage = &oldest
 		stats.LatestMessage = &latest
 	}
-	
+
 	// Calculate storage size (rough estimation)
 	storageSize := int64(0)
 	for _, msg := range messages {
 		storageSize += int64(len(msg.Content) + len(msg.ID) + len(msg.Role))
 	}
 	stats.StorageSize = storageSize
-	
+
 	sm.stats[sessionID] = stats
 }
 
 func contains(text, query string) bool {
-	return len(text) > 0 && len(query) > 0 && 
+	return len(text) > 0 && len(query) > 0 &&
 		(text == query || len(text) > len(query))
 }
 

@@ -13,16 +13,30 @@ import (
 // Simple integration example showing all memory modes
 // For detailed examples, see the numbered directories (01-session-only/, 02-persistent-basic/, etc.)
 func main() {
+	printHeader()
+	runExamples()
+	printNextSteps()
+}
+
+func printHeader() {
 	fmt.Println("🧠 Go Agent Memory - Integration Overview")
 	fmt.Println("=========================================")
 	fmt.Println()
+}
 
-	// Example 1: Session-Only Mode (Zero Dependencies)
+func runExamples() {
+	runSessionOnlyExample()
+	runPersistentExample()
+	runHybridExample()
+}
+
+func runSessionOnlyExample() {
 	fmt.Println("1️⃣  Session-Only Mode (No external dependencies)")
 	sessionOnlyExample()
 	fmt.Println()
+}
 
-	// Example 2: Persistent Mode (Database Required)
+func runPersistentExample() {
 	fmt.Println("2️⃣  Persistent Mode (Requires DATABASE_URL)")
 	if dbURL := getEnvOrDefault("DATABASE_URL", ""); dbURL != "" {
 		persistentExample(dbURL)
@@ -30,19 +44,22 @@ func main() {
 		fmt.Println("   ⚠️  Skipped - DATABASE_URL not set")
 	}
 	fmt.Println()
+}
 
-	// Example 3: Hybrid Mode (Database + Redis)
+func runHybridExample() {
 	fmt.Println("3️⃣  Hybrid Mode (Requires DATABASE_URL + REDIS_URL)")
 	dbURL := getEnvOrDefault("DATABASE_URL", "")
 	redisURL := getEnvOrDefault("REDIS_URL", "")
+	
 	if dbURL != "" && redisURL != "" {
 		hybridExample(dbURL, redisURL)
 	} else {
 		fmt.Println("   ⚠️  Skipped - DATABASE_URL and/or REDIS_URL not set")
 	}
 	fmt.Println()
+}
 
-	// Next Steps
+func printNextSteps() {
 	fmt.Println("📚 For Detailed Examples:")
 	fmt.Println("   01-session-only/     - Complete zero-dependency example")
 	fmt.Println("   02-persistent-basic/ - PostgreSQL persistence")
