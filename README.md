@@ -19,11 +19,10 @@ A modular, production-ready memory system for AI agents with multiple deployment
 
 ## Documentation 📚
 
-- [**Implementation Guide**](docs/IMPLEMENTATION_GUIDE.md) - Complete integration guide
-- [**Architecture Overview**](docs/ARCHITECTURE.md) - System design and data flow
-- [**Examples**](examples/) - 7 complete examples from simple to production
-- [**Integration Guide**](docs/INTEGRATE_WITH_AGENT.md) - Step-by-step agent integration
-- [**Summary**](docs/SUMMARY.md) - Quick overview and key features
+- [**📚 Complete Documentation**](docs/) - All guides and references
+- [**🚀 Quick Start Guide**](docs/QUICK_START.md) - Zero to running in 5 minutes
+- [**🏗️ Architecture Overview**](docs/ARCHITECTURE.md) - System design and data flow
+- [**📖 Examples**](examples/) - 7 complete examples from simple to production
 
 ## Repository Structure 📁
 
