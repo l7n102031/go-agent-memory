@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 	"time"
-
+	
 	memory "github.com/framehood/go-agent-memory"
-	openai "github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
 )
 
@@ -67,7 +67,7 @@ func initializeAgent() (*Agent, error) {
 	if openAIKey == "" {
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")
 	}
-
+	
 	// Create OpenAI client
 	client := openai.NewClient(
 		option.WithAPIKey(openAIKey),
@@ -79,7 +79,7 @@ func initializeAgent() (*Agent, error) {
 		memoryMode = "none"
 	}
 
-	// Create agent configuration
+		// Create agent configuration
 	config := AgentConfig{
 		Model:         MODEL,
 		Temperature:   TEMPERATURE,
@@ -88,7 +88,7 @@ func initializeAgent() (*Agent, error) {
 		MemoryEnabled: memoryMode != "none",
 		MemoryMode:    memoryMode,
 	}
-
+	
 	// Initialize agent
 	agent := &Agent{
 		client: client,
@@ -280,9 +280,6 @@ func (a *Agent) handleCommand(ctx context.Context, sessionID string, command str
 }
 
 func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) (string, error) {
-	// Build conversation context
-	messages := a.buildContext(ctx, sessionID, userMessage)
-
 	// Store user message in memory
 	if a.memory != nil {
 		a.memory.AddMessage(ctx, memory.Message{
@@ -295,26 +292,29 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 			},
 		})
 	}
-
+	
+	// Build conversation context
+	messages := a.buildContext(ctx, sessionID, userMessage)
+	
 	// Call OpenAI API
-	completion, err := a.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
-		Model:       openai.String(a.config.Model),
-		Messages:    openai.F(messages),
-		Temperature: openai.Float(a.config.Temperature),
-		MaxTokens:   openai.Int(int64(a.config.MaxTokens)),
+	completion, err := a.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model:       a.config.Model,
+		Messages:    messages,
+		Temperature: float32(a.config.Temperature),
+		MaxTokens:   a.config.MaxTokens,
 	})
-
+	
 	if err != nil {
 		return "", fmt.Errorf("OpenAI API error: %w", err)
 	}
-
+	
 	// Get response
 	if len(completion.Choices) == 0 {
 		return "", fmt.Errorf("no response from model")
 	}
-
+	
 	response := completion.Choices[0].Message.Content
-
+	
 	// Store assistant response in memory
 	if a.memory != nil {
 		a.memory.AddMessage(ctx, memory.Message{
@@ -328,31 +328,36 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 			},
 		})
 	}
-
+	
 	return response, nil
 }
 
-func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessage string) []openai.ChatCompletionMessageParamUnion {
-	var messages []openai.ChatCompletionMessageParamUnion
-
+func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessage string) []openai.ChatCompletionMessage {
+	var messages []openai.ChatCompletionMessage
+	
 	// Add system prompt
-	messages = append(messages, openai.SystemMessage(a.config.SystemPrompt))
-
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: a.config.SystemPrompt,
+	})
+	
 	// Add conversation history from memory
 	if a.memory != nil {
 		// Get recent messages
 		recent, err := a.memory.GetRecentMessages(ctx, sessionID, 10)
 		if err == nil {
 			for _, msg := range recent {
-				switch msg.Role {
-				case "user":
-					messages = append(messages, openai.UserMessage(msg.Content))
-				case "assistant":
-					messages = append(messages, openai.AssistantMessage(msg.Content))
+				role := openai.ChatMessageRoleUser
+				if msg.Role == "assistant" {
+					role = openai.ChatMessageRoleAssistant
 				}
+				messages = append(messages, openai.ChatCompletionMessage{
+					Role:    role,
+					Content: msg.Content,
+				})
 			}
 		}
-
+		
 		// Search for relevant context (if semantic search is enabled)
 		if a.config.MemoryMode == "persistent" || a.config.MemoryMode == "hybrid" {
 			results, err := a.memory.Search(ctx, currentMessage, 3, 0.75)
@@ -362,14 +367,20 @@ func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessa
 				for _, result := range results {
 					contextMsg += fmt.Sprintf("- %s\n", result.Message.Content)
 				}
-				messages = append(messages, openai.SystemMessage(contextMsg))
+				messages = append(messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: contextMsg,
+				})
 			}
 		}
 	}
-
+	
 	// Add current message
-	messages = append(messages, openai.UserMessage(currentMessage))
-
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: currentMessage,
+	})
+	
 	return messages
 }
 
