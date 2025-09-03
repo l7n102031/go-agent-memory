@@ -22,32 +22,44 @@ A production-ready AI agent with configurable memory system, demonstrating all f
 
 ## 🚀 Quick Start
 
-### Option 1: No Memory (Development)
+### Option 1: Session Memory Only
 ```bash
+OPENAI_API_KEY="sk-your-key-here" \
+MEMORY_MODE=session_only \
 go run main.go
 ```
 
-### Option 2: Session Memory Only
+### Option 2: No Memory (Testing)
 ```bash
-MEMORY_MODE=session_only go run main.go
+OPENAI_API_KEY="sk-your-key-here" \
+go run main.go
 ```
 
 ### Option 3: Full Persistent Memory
 ```bash
-DATABASE_URL="postgresql://..." \
-OPENAI_API_KEY="sk-..." \
+OPENAI_API_KEY="sk-your-key-here" \
+DATABASE_URL="postgresql://user:pass@host:5432/dbname" \
 MEMORY_MODE=persistent \
 go run main.go
 ```
 
 ### Option 4: Hybrid Mode (Recommended for Production)
 ```bash
-DATABASE_URL="postgresql://..." \
+OPENAI_API_KEY="sk-your-key-here" \
+DATABASE_URL="postgresql://user:pass@host:5432/dbname" \
 REDIS_URL="localhost:6379" \
-OPENAI_API_KEY="sk-..." \
 MEMORY_MODE=hybrid \
 go run main.go
 ```
+
+## ⚠️ **Required Environment Variable**
+
+**`OPENAI_API_KEY` is REQUIRED** for this example to work. The agent needs it to:
+- Make actual chat completions
+- Generate responses to user input
+- Demonstrate real AI agent behavior
+
+Get your API key from: https://platform.openai.com/api-keys
 
 ## 💻 Architecture Overview
 
@@ -281,13 +293,13 @@ func (a *Agent) Chat(sessionID, message string) (string, error) {
 ## 🌍 Environment Variables
 
 ```bash
-# Required
-OPENAI_API_KEY=sk-...
+# REQUIRED - Agent won't work without this
+OPENAI_API_KEY=sk-your-actual-key-here
 
-# Memory Configuration
-MEMORY_MODE=hybrid              # none, session_only, persistent, hybrid
-DATABASE_URL=postgresql://...   # For persistent/hybrid modes
-REDIS_URL=localhost:6379        # For hybrid mode
+# Memory Configuration (Optional)
+MEMORY_MODE=session_only        # none, session_only, persistent, hybrid
+DATABASE_URL=postgresql://...   # Required for persistent/hybrid modes
+REDIS_URL=localhost:6379        # Required for hybrid mode
 
 # Agent Settings
 AGENT_MODEL=gpt-4
