@@ -20,19 +20,21 @@ The Go Agent Memory module follows a modular, interface-based design that allows
 └──────────┬──────────────────────────┘
            │
            ▼
-┌──────────────────────────────────────┐
-│    Implementation Layer              │
-├──────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐ │
-│  │ SupabaseMemory│  │ HybridMemory │ │
-│  └──────────────┘  └──────────────┘ │
-└──────────────────────────────────────┘
-           │                │
-           ▼                ▼
-┌──────────────────┐  ┌──────────────┐
-│  Supabase/PG     │  │    Redis     │
-│  + pgvector      │  │   (Cache)    │
-└──────────────────┘  └──────────────┘
+┌──────────────────────────────────────────────┐
+│         Implementation Layer                 │
+├──────────────────────────────────────────────┤
+│ ┌─────────────┐ ┌─────────────┐ ┌──────────┐ │
+│ │SessionOnly  │ │ Supabase    │ │ Hybrid   │ │
+│ │Memory       │ │ Memory      │ │ Memory   │ │
+│ └─────────────┘ └─────────────┘ └──────────┘ │
+└──────────────────────────────────────────────┘
+       │                 │              │
+       ▼                 ▼              ▼
+┌─────────────┐  ┌──────────────┐  ┌──────────────┐
+│ In-Memory   │  │ PostgreSQL   │  │ Redis +      │
+│ Maps        │  │ + pgvector   │  │ PostgreSQL   │
+│ (Zero Deps) │  │              │  │              │
+└─────────────┘  └──────────────┘  └──────────────┘
 ```
 
 ## Core Components
@@ -40,19 +42,30 @@ The Go Agent Memory module follows a modular, interface-based design that allows
 ### 1. Memory Interface (`memory.go`)
 - Defines the contract that all memory implementations must follow
 - Provides a unified API regardless of the underlying storage
-- Includes types for Message, Metadata, SearchResult, and Stats
+- Includes types for Message, Metadata, SearchResult, Stats, and Summary
+- Defines MemoryMode constants (SESSION_ONLY, PERSISTENT, HYBRID)
+- NewWithConfig() constructor with feature flags and defaults
 
-### 2. SupabaseMemory (`supabase.go`)
+### 2. SessionOnlyMemory (`session_only.go`)
+- Pure in-memory implementation using Go maps
+- Zero external dependencies
+- Fast access (microsecond response times)
+- Automatic cleanup and memory limits
+- Perfect for development and testing
+
+### 3. SupabaseMemory (`supabase.go`)
 - Direct PostgreSQL implementation using pgvector
 - Handles embedding generation via OpenAI API
 - Manages database schema initialization
 - Provides semantic search capabilities
+- GetSummary() implementation for conversation summaries
 
-### 3. HybridMemory (`hybrid.go`)
+### 4. HybridMemory (`hybrid.go`)
 - Combines Redis for fast session access with Supabase for persistence
 - Implements write-through caching strategy
 - Provides automatic fallback to Supabase if Redis is unavailable
 - Manages cache invalidation and TTL
+- ClearCache() and GetCacheStats() for cache management
 
 ## Data Flow
 

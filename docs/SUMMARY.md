@@ -2,11 +2,13 @@
 
 ## What We Built
 
-A **modular, optional memory system** for your AI agent that:
-- ✅ **Uses your existing Supabase** (PostgreSQL + pgvector)
-- ✅ **Optional Redis layer** for 2-5ms response times
-- ✅ **Plug-and-play** - import and use, or ignore completely
-- ✅ **Production-ready** with proper error handling
+A **modular, flexible memory system** for your AI agent with multiple deployment modes:
+- ✅ **Three deployment modes**: Session-only, Persistent, Hybrid
+- ✅ **Zero dependencies option** - session-only mode requires nothing
+- ✅ **PostgreSQL + pgvector** for persistent semantic search
+- ✅ **Optional Redis layer** for 1-5ms response times
+- ✅ **Feature flags** - enable only what you need
+- ✅ **Production-ready** with proper error handling and graceful degradation
 
 ## Architecture
 
@@ -16,12 +18,21 @@ A **modular, optional memory system** for your AI agent that:
 └────────┬────────┘
          │ (optional import)
          ▼
+┌─────────────────┐    ┌──────────────────┐
+│  Memory Module  │────│ Mode Selection   │
+├─────────────────┤    │ • SESSION_ONLY   │
+│ NewWithConfig() │    │ • PERSISTENT     │
+│ Feature Flags   │    │ • HYBRID         │
+└─────────┬───────┘    └──────────────────┘
+          │
+          ▼
 ┌─────────────────┐
-│  Memory Module  │
+│ Implementation  │
 ├─────────────────┤
-│  Session Cache  │──► Redis (optional, 2-5ms)
-│  Semantic Search│──► Supabase pgvector (required)
-│  Summarization  │──► OpenAI API
+│ Session Cache   │──► In-Memory / Redis (1-5ms)
+│ Semantic Search │──► PostgreSQL pgvector (optional)
+│ Summarization   │──► OpenAI API (optional)
+│ Event Streaming │──► Redis Streams (optional)
 └─────────────────┘
 ```
 
@@ -29,35 +40,59 @@ A **modular, optional memory system** for your AI agent that:
 
 ```
 go-agent-memory/
-├── memory.go            # Core interfaces and types
-├── supabase.go         # Supabase/pgvector implementation
-├── hybrid.go           # Redis + Supabase hybrid
-├── memory_test.go      # Unit tests
-├── example/
-│   └── integration.go  # Example usage
-├── README.md           # Full documentation
-├── INTEGRATE_WITH_AGENT.md  # Quick integration guide
-├── docker-compose.yml  # Local testing setup
-├── init.sql           # PostgreSQL initialization
-├── Makefile           # Build automation
-├── go.mod             # Go module definition
-├── env.example        # Environment template
-└── .gitignore         # Git ignore rules
+├── memory.go              # Core interfaces, types, and modes
+├── session_only.go        # In-memory implementation (zero deps)
+├── supabase.go           # PostgreSQL + pgvector implementation
+├── hybrid.go             # Redis + PostgreSQL hybrid
+├── docs/                 # Complete documentation
+│   ├── IMPLEMENTATION_GUIDE.md
+│   ├── ARCHITECTURE.md
+│   ├── INTEGRATE_WITH_AGENT.md
+│   └── SUMMARY.md
+├── examples/             # 7 complete examples
+│   ├── 01-session-only/
+│   ├── 02-persistent-basic/
+│   ├── 03-hybrid-mode/
+│   ├── 04-semantic-search/
+│   ├── 05-auto-summarization/
+│   ├── 06-event-streaming/
+│   ├── 07-agent-integration/
+│   └── integration.go
+├── tests/
+│   └── memory_test.go    # Unit tests
+├── deployment/
+│   ├── docker-compose.yml
+│   └── init.sql
+├── scripts/
+│   └── quickstart.sh
+├── README.md             # Complete documentation
+├── Makefile              # Build automation
+└── go.mod                # Go module definition
 ```
 
 ## Quick Integration
 
-**1. Add to your agent:**
+**1. Choose your mode:**
 ```go
 import memory "github.com/framehood/go-agent-memory"
 
 var mem memory.Memory
 
 func init() {
+    // Option A: Zero dependencies
+    mem, _ = memory.NewWithConfig(memory.Config{
+        Mode: memory.SESSION_ONLY,
+    })
+    
+    // Option B: Full features
     if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
-        mem, _ = memory.New(memory.Config{
+        mem, _ = memory.NewWithConfig(memory.Config{
+            Mode:        memory.HYBRID,
             DatabaseURL: dbURL,
+            RedisAddr:   os.Getenv("REDIS_URL"),
             OpenAIKey:   os.Getenv("OPENAI_API_KEY"),
+            EnableSemanticSearch: true,
+            EnableAutoSummarize:  true,
         })
     }
 }
@@ -65,14 +100,24 @@ func init() {
 
 **2. Use in conversation:**
 ```go
-// Store messages
+// Store messages (works in all modes)
 if mem != nil {
     mem.AddMessage(ctx, message)
 }
 
-// Search past conversations
+// Get recent messages (works in all modes)
+if mem != nil {
+    recent, _ := mem.GetRecentMessages(ctx, sessionID, 10)
+}
+
+// Search past conversations (persistent/hybrid modes only)
 if mem != nil {
     results, _ := mem.Search(ctx, query, 5, 0.7)
+}
+
+// Get conversation summary (persistent/hybrid modes only)
+if mem != nil {
+    summary, _ := mem.GetSummary(ctx, sessionID)
 }
 ```
 
@@ -85,11 +130,12 @@ if mem != nil {
 
 ## Performance
 
-| Operation | With Redis | Supabase Only |
-|-----------|------------|---------------|
-| Get Messages | 2-5ms | 20-50ms |
-| Store Message | 10ms | 20-30ms |
-| Semantic Search | 50-100ms | 50-100ms |
+| Operation | Session-Only | Persistent | Hybrid |
+|-----------|-------------|------------|--------|
+| Get Messages | ~1μs | 20-50ms | 2-5ms |
+| Store Message | ~1μs | 20-30ms | 10ms |
+| Semantic Search | 1ms (basic) | 50-100ms | 50-100ms |
+| Memory Usage | <10MB | Varies | <100MB cache |
 
 ## Next Steps
 

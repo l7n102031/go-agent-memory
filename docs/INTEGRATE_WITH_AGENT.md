@@ -25,17 +25,30 @@ var mem memory.Memory // Optional memory instance
 
 // Add this function before main()
 func initMemory() {
-    dbURL := os.Getenv("DATABASE_URL")
-    if dbURL == "" {
-        return // Memory is optional
+    // Option 1: Session-only mode (no dependencies)
+    if os.Getenv("DATABASE_URL") == "" {
+        mem, _ = memory.NewWithConfig(memory.Config{
+            Mode: memory.SESSION_ONLY,
+            MaxSessionMessages: 30,
+        })
+        return
     }
     
+    // Option 2: Full persistent mode
     var err error
-    mem, err = memory.New(memory.Config{
-        DatabaseURL:        dbURL,
-        OpenAIKey:         os.Getenv("OPENAI_API_KEY"),
-        RedisAddr:         os.Getenv("REDIS_URL"),
+    mem, err = memory.NewWithConfig(memory.Config{
+        Mode:        memory.HYBRID, // or PERSISTENT
+        DatabaseURL: os.Getenv("DATABASE_URL"),
+        RedisAddr:   os.Getenv("REDIS_URL"),
+        OpenAIKey:   os.Getenv("OPENAI_API_KEY"),
+        
+        // Feature flags
+        EnableSemanticSearch: true,
+        EnableAutoSummarize:  true,
+        
+        // Settings
         MaxSessionMessages: 30,
+        SessionTTL:        2 * time.Hour,
     })
     
     if err != nil {
@@ -119,9 +132,14 @@ source .env && go run main.go
 
 ## Features You Get
 
+### All Modes:
 1. **Conversation History**: Automatically stores all conversations
-2. **Context Retrieval**: Recent messages are loaded automatically
-3. **Semantic Search**: Find relevant past conversations:
+2. **Context Retrieval**: Recent messages are loaded automatically  
+3. **Session Management**: Track different conversation sessions
+4. **Statistics**: Get memory usage stats
+
+### Persistent/Hybrid Modes Only:
+5. **Semantic Search**: Find relevant past conversations:
    ```go
    if mem != nil {
        results, _ := mem.Search(ctx, "weather in Tokyo", 3, 0.7)
@@ -129,8 +147,17 @@ source .env && go run main.go
    }
    ```
 
-4. **Session Management**: Track different conversation sessions
-5. **Auto-Summarization**: Long conversations are automatically summarized
+6. **Auto-Summarization**: Long conversations are automatically summarized
+7. **Conversation Summaries**: Get structured summaries:
+   ```go
+   if mem != nil {
+       summary, _ := mem.GetSummary(ctx, sessionID)
+       fmt.Printf("Summary: %s\n", summary.Content)
+   }
+   ```
+
+### Hybrid Mode Only:
+8. **Cache Management**: Clear and monitor cache performance
 
 ## Optional: Add Memory Commands
 
