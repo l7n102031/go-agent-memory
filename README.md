@@ -4,20 +4,24 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/framehood/go-agent-memory)](https://goreportcard.com/report/github.com/framehood/go-agent-memory)
 
-A modular, production-ready memory system for AI agents with semantic search capabilities. Uses **Supabase** (PostgreSQL + pgvector) for long-term semantic memory and optional **Redis** for blazing-fast session caching.
+A modular, production-ready memory system for AI agents with multiple deployment modes. Supports **session-only** (zero dependencies), **persistent** (PostgreSQL + pgvector), and **hybrid** (Redis + PostgreSQL) configurations.
 
 ## Features ✨
 
+- **🚀 Multiple Modes**: Session-only, Persistent, or Hybrid deployment
 - **📝 Session Memory**: Fast retrieval of recent conversation history
 - **🔍 Semantic Search**: Find relevant past conversations using vector similarity
-- **💾 Hybrid Storage**: Redis for speed + Supabase for persistence
+- **💾 Flexible Storage**: In-memory, PostgreSQL, or Redis + PostgreSQL
 - **🎯 Auto-Summarization**: Compress old conversations to save tokens
-- **🔌 Modular Design**: Use as a simple import, doesn't affect your app if not used
+- **🔧 Feature Flags**: Enable/disable features as needed
+- **🔌 Zero Dependencies**: Start with session-only mode, add features later
 - **⚡ Production Ready**: Connection pooling, error handling, and graceful degradation
 
 ## Documentation 📚
 
+- [**Implementation Guide**](docs/IMPLEMENTATION_GUIDE.md) - Complete integration guide
 - [**Architecture Overview**](docs/ARCHITECTURE.md) - System design and data flow
+- [**Examples**](examples/) - 7 complete examples from simple to production
 - [**Integration Guide**](docs/INTEGRATE_WITH_AGENT.md) - Step-by-step agent integration
 - [**Summary**](docs/SUMMARY.md) - Quick overview and key features
 
@@ -26,15 +30,24 @@ A modular, production-ready memory system for AI agents with semantic search cap
 ```
 go-agent-memory/
 ├── memory.go           # Core interfaces and types
-├── supabase.go        # Supabase/pgvector implementation
-├── hybrid.go          # Redis + Supabase hybrid
+├── session_only.go     # In-memory implementation (zero deps)
+├── supabase.go        # PostgreSQL + pgvector implementation
+├── hybrid.go          # Redis + PostgreSQL hybrid
 ├── docs/              # Documentation
+│   ├── IMPLEMENTATION_GUIDE.md
 │   ├── ARCHITECTURE.md
 │   ├── INTEGRATE_WITH_AGENT.md
 │   └── SUMMARY.md
 ├── tests/             # Test files
 │   └── memory_test.go
-├── examples/          # Usage examples
+├── examples/          # Complete examples (7 modes)
+│   ├── 01-session-only/
+│   ├── 02-persistent-basic/
+│   ├── 03-hybrid-mode/
+│   ├── 04-semantic-search/
+│   ├── 05-auto-summarization/
+│   ├── 06-event-streaming/
+│   ├── 07-agent-integration/
 │   └── integration.go
 ├── scripts/           # Utility scripts
 │   └── quickstart.sh
@@ -51,13 +64,33 @@ go-agent-memory/
 go get github.com/framehood/go-agent-memory
 ```
 
-### 2. Set Up Supabase
+### 2. Choose Your Mode
 
-Ensure pgvector is enabled in your Supabase instance:
+**Option A: Zero Dependencies (Session-Only)**
+```go
+mem, _ := memory.NewWithConfig(memory.Config{
+    Mode: memory.SESSION_ONLY,
+})
+// No database or Redis needed!
+```
 
-```sql
--- Run this in Supabase SQL Editor
-CREATE EXTENSION IF NOT EXISTS vector;
+**Option B: Persistent (PostgreSQL)**
+```go
+mem, _ := memory.NewWithConfig(memory.Config{
+    Mode:        memory.PERSISTENT,
+    DatabaseURL: "postgresql://user:pass@host:5432/dbname",
+    OpenAIKey:   "sk-...", // For semantic search
+})
+```
+
+**Option C: Hybrid (Redis + PostgreSQL)**
+```go
+mem, _ := memory.NewWithConfig(memory.Config{
+    Mode:        memory.HYBRID,
+    DatabaseURL: "postgresql://user:pass@host:5432/dbname",
+    RedisAddr:   "localhost:6379",
+    OpenAIKey:   "sk-...",
+})
 ```
 
 ### 3. Basic Usage
@@ -74,8 +107,9 @@ import (
 )
 
 func main() {
-    // Initialize with just Supabase (no Redis)
-    mem, err := memory.New(memory.Config{
+    // Initialize memory (auto-detects mode from config)
+    mem, err := memory.NewWithConfig(memory.Config{
+        Mode:           memory.PERSISTENT,
         DatabaseURL:    "postgresql://user:pass@host:5432/dbname",
         OpenAIKey:      "your-openai-key",
         EmbeddingModel: "text-embedding-3-small",
@@ -138,18 +172,22 @@ func initMemory() {
     }
     
     var err error
-    mem, err = memory.New(memory.Config{
-        DatabaseURL:    dbURL,
-        OpenAIKey:      os.Getenv("OPENAI_API_KEY"),
+    mem, err = memory.NewWithConfig(memory.Config{
+        Mode:        memory.HYBRID, // Or PERSISTENT, SESSION_ONLY
+        DatabaseURL: dbURL,
+        OpenAIKey:   os.Getenv("OPENAI_API_KEY"),
         
         // Optional Redis for faster session access
-        RedisAddr:      os.Getenv("REDIS_URL"), // e.g., "localhost:6379"
-        RedisPassword:  os.Getenv("REDIS_PASSWORD"),
+        RedisAddr:     os.Getenv("REDIS_URL"), // e.g., "localhost:6379"
+        RedisPassword: os.Getenv("REDIS_PASSWORD"),
+        
+        // Feature flags
+        EnableSemanticSearch: true,
+        EnableAutoSummarize:  true,
         
         // Settings
         MaxSessionMessages: 50,
         SessionTTL:        24 * time.Hour,
-        AutoSummarize:     true,
     })
     
     if err != nil {
@@ -203,36 +241,51 @@ func main() {
 
 ## Configuration Options 🔧
 
-### Minimal Config (Supabase Only)
+### Session-Only Mode (Zero Dependencies)
 ```go
 memory.Config{
-    DatabaseURL: "postgresql://...",  // Required
-    OpenAIKey:   "sk-...",           // Required for embeddings
+    Mode: memory.SESSION_ONLY,
+    MaxSessionMessages: 50, // Optional: default 50
 }
 ```
 
-### Full Config (Hybrid Mode)
+### Persistent Mode (PostgreSQL)
 ```go
 memory.Config{
-    // Supabase (Required)
-    SupabaseURL:  "https://xxx.supabase.co",
-    SupabaseKey:  "your-anon-key",
-    DatabaseURL:  "postgresql://...",
+    Mode:        memory.PERSISTENT,
+    DatabaseURL: "postgresql://...",  // Required
+    OpenAIKey:   "sk-...",           // Optional: for semantic search
     
-    // Redis (Optional - enables fast session cache)
-    RedisAddr:     "localhost:6379",
-    RedisPassword: "optional-password",
-    RedisDB:       0,
+    // Feature flags
+    EnableSemanticSearch: true,  // Enable vector search
+    EnableAutoSummarize:  true,  // Enable summarization
+}
+```
+
+### Hybrid Mode (Redis + PostgreSQL)
+```go
+memory.Config{
+    Mode:        memory.HYBRID,
+    DatabaseURL: "postgresql://...",  // Required
+    RedisAddr:   "localhost:6379",   // Required
+    OpenAIKey:   "sk-...",           // Optional: for semantic search
     
-    // OpenAI (Required for embeddings)
-    OpenAIKey:      "sk-...",
-    EmbeddingModel: "text-embedding-3-small", // or text-embedding-3-large
+    // Feature flags
+    EnableSemanticSearch: true,
+    EnableAutoSummarize:  true,
     
-    // Memory Settings
-    MaxSessionMessages: 50,           // Keep last N messages in fast cache
-    SessionTTL:        24 * time.Hour, // Redis cache expiry
-    AutoSummarize:     true,          // Auto-summarize old conversations
-    VectorDimension:   1536,          // Match your embedding model
+    // Performance settings
+    MaxSessionMessages: 30,           // Messages in Redis cache
+    SessionTTL:        2 * time.Hour, // Redis cache expiry
+    
+    // Summarization settings
+    SummarizeThreshold: 50,          // Messages before summarization
+    SummarizeMaxTokens: 500,         // Target summary length
+    SummarizeModel:     "gpt-3.5-turbo",
+    
+    // Search settings
+    DefaultSearchLimit:     5,
+    DefaultSearchThreshold: 0.7,
 }
 ```
 
@@ -281,7 +334,12 @@ export SUPABASE_ANON_KEY="eyJ..."
 - Message storage: **~10ms**
 - Semantic search: **~50-100ms**
 
-### With Supabase Only
+### Session-Only Mode
+- Session retrieval: **~1μs** (in-memory)
+- Message storage: **~1μs** (in-memory)
+- Search: **~1ms** (basic text matching)
+
+### Persistent Mode (PostgreSQL)
 - Session retrieval: **~20-50ms**
 - Message storage: **~20-30ms**
 - Semantic search: **~50-100ms**
@@ -322,7 +380,8 @@ CREATE TABLE agent_summaries (
 
 ### Custom Embedding Models
 ```go
-mem, _ := memory.New(memory.Config{
+mem, _ := memory.NewWithConfig(memory.Config{
+    Mode:            memory.PERSISTENT,
     DatabaseURL:     dbURL,
     OpenAIKey:       apiKey,
     EmbeddingModel:  "text-embedding-3-large",
@@ -342,13 +401,49 @@ results, _ := mem.SearchWithEmbedding(ctx, embedding, 10, 0.8)
 stats, _ := mem.GetStats(ctx, "session-123")
 fmt.Printf("Total messages: %d\n", stats.TotalMessages)
 fmt.Printf("Total tokens: %d\n", stats.TotalTokens)
+fmt.Printf("Has summary: %v\n", stats.HasSummary)
+fmt.Printf("Active tokens: %d\n", stats.ActiveTokens)
 ```
 
-### Summarize Long Conversations
+### Get Conversation Summary
 ```go
-summary, _ := mem.Summarize(ctx, "session-123", 4000) // Max 4000 tokens
-fmt.Println("Summary:", summary)
+summary, _ := mem.GetSummary(ctx, "session-123")
+fmt.Printf("Summary: %s\n", summary.Content)
+fmt.Printf("Covers %d messages\n", summary.MessageCount)
 ```
+
+### Cache Management (Hybrid Mode)
+```go
+if hybridMem, ok := mem.(*memory.HybridMemory); ok {
+    // Clear cache for session
+    hybridMem.ClearCache(ctx, "session-123")
+    
+    // Get cache statistics
+    stats, _ := hybridMem.GetCacheStats(ctx)
+    fmt.Printf("Cache hit rate: %.1f%%\n", 
+        float64(stats.Hits)/(stats.Hits+stats.Misses)*100)
+}
+```
+
+## Examples 📖
+
+The repository includes 7 complete examples showing different configurations:
+
+| Example | Description | Dependencies | Difficulty |
+|---------|-------------|--------------|------------|
+| [01-session-only](examples/01-session-only/) | In-memory only, no persistence | None | ⭐ Beginner |
+| [02-persistent-basic](examples/02-persistent-basic/) | PostgreSQL persistence | PostgreSQL | ⭐⭐ Easy |
+| [03-hybrid-mode](examples/03-hybrid-mode/) | Redis + PostgreSQL | Redis, PostgreSQL | ⭐⭐⭐ Intermediate |
+| [04-semantic-search](examples/04-semantic-search/) | Vector search with pgvector | PostgreSQL, OpenAI | ⭐⭐⭐ Intermediate |
+| [05-auto-summarization](examples/05-auto-summarization/) | Automatic conversation summaries | PostgreSQL, OpenAI | ⭐⭐⭐ Intermediate |
+| [06-event-streaming](examples/06-event-streaming/) | Redis Streams for event sourcing | Redis | ⭐⭐⭐⭐ Advanced |
+| [07-agent-integration](examples/07-agent-integration/) | Complete AI agent with memory | All optional | ⭐⭐⭐⭐ Advanced |
+
+Each example includes:
+- Complete runnable code
+- Detailed README with setup instructions
+- Performance benchmarks and usage patterns
+- Migration guides to more advanced configurations
 
 ## Testing 🧪
 
