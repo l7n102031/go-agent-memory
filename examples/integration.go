@@ -50,7 +50,7 @@ func runHybridExample() {
 	fmt.Println("3️⃣  Hybrid Mode (Requires DATABASE_URL + REDIS_URL)")
 	dbURL := getEnvOrDefault("DATABASE_URL", "")
 	redisURL := getEnvOrDefault("REDIS_URL", "")
-	
+
 	if dbURL != "" && redisURL != "" {
 		hybridExample(dbURL, redisURL)
 	} else {
