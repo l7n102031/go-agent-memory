@@ -147,34 +147,8 @@ func New(cfg Config) (Memory, error) {
 
 // NewWithConfig creates a new memory instance with explicit configuration
 func NewWithConfig(cfg Config) (Memory, error) {
-	// Set defaults
-	if cfg.MaxSessionMessages == 0 {
-		cfg.MaxSessionMessages = 50
-	}
-	if cfg.SessionTTL == 0 {
-		cfg.SessionTTL = 24 * time.Hour
-	}
-	if cfg.EmbeddingModel == "" {
-		cfg.EmbeddingModel = "text-embedding-3-small"
-	}
-	if cfg.VectorDimension == 0 {
-		cfg.VectorDimension = 1536
-	}
-	if cfg.SummarizeThreshold == 0 {
-		cfg.SummarizeThreshold = 30
-	}
-	if cfg.SummarizeMaxTokens == 0 {
-		cfg.SummarizeMaxTokens = 500
-	}
-	if cfg.SummarizeModel == "" {
-		cfg.SummarizeModel = "gpt-3.5-turbo"
-	}
-	if cfg.DefaultSearchLimit == 0 {
-		cfg.DefaultSearchLimit = 5
-	}
-	if cfg.DefaultSearchThreshold == 0 {
-		cfg.DefaultSearchThreshold = 0.7
-	}
+	// Set defaults for zero values
+	setDefaults(&cfg)
 
 	// Create memory based on mode
 	switch cfg.Mode {
@@ -193,5 +167,53 @@ func NewWithConfig(cfg Config) (Memory, error) {
 		} else {
 			return NewSessionOnlyMemory(cfg)
 		}
+	}
+}
+
+// setDefaults sets default values for zero-value config fields
+func setDefaults(cfg *Config) {
+	// Set defaults in groups to reduce complexity
+	setMemoryDefaults(cfg)
+	setEmbeddingDefaults(cfg)
+	setSummarizationDefaults(cfg)
+	setSearchDefaults(cfg)
+}
+
+func setMemoryDefaults(cfg *Config) {
+	if cfg.MaxSessionMessages == 0 {
+		cfg.MaxSessionMessages = 50
+	}
+	if cfg.SessionTTL == 0 {
+		cfg.SessionTTL = 24 * time.Hour
+	}
+}
+
+func setEmbeddingDefaults(cfg *Config) {
+	if cfg.EmbeddingModel == "" {
+		cfg.EmbeddingModel = "text-embedding-3-small"
+	}
+	if cfg.VectorDimension == 0 {
+		cfg.VectorDimension = 1536
+	}
+}
+
+func setSummarizationDefaults(cfg *Config) {
+	if cfg.SummarizeThreshold == 0 {
+		cfg.SummarizeThreshold = 30
+	}
+	if cfg.SummarizeMaxTokens == 0 {
+		cfg.SummarizeMaxTokens = 500
+	}
+	if cfg.SummarizeModel == "" {
+		cfg.SummarizeModel = "gpt-3.5-turbo"
+	}
+}
+
+func setSearchDefaults(cfg *Config) {
+	if cfg.DefaultSearchLimit == 0 {
+		cfg.DefaultSearchLimit = 5
+	}
+	if cfg.DefaultSearchThreshold == 0 {
+		cfg.DefaultSearchThreshold = 0.7
 	}
 }
