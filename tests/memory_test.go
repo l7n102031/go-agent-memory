@@ -93,8 +93,8 @@ func (m *MockMemory) GetStats(ctx context.Context, sessionID string) (*memory.St
 		SessionID:       sessionID,
 		TotalMessages:   len(m.messages),
 		SessionMessages: count,
-		OldestMessage:   &[]time.Time{time.Now().Add(-24 * time.Hour)}[0],
-		LatestMessage:   &[]time.Time{time.Now()}[0],
+		OldestMessage:   func() *time.Time { t := time.Now().Add(-24 * time.Hour); return &t }(),
+		LatestMessage:   func() *time.Time { t := time.Now(); return &t }(),
 	}, nil
 }
 

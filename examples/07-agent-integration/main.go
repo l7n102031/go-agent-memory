@@ -26,7 +26,7 @@ const (
 
 // Agent represents our AI agent with optional memory
 type Agent struct {
-	client *openai.Client
+	client openai.Client
 	memory memory.Memory // Can be nil
 	config AgentConfig
 }
@@ -297,11 +297,11 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 	messages := a.buildContext(ctx, sessionID, userMessage)
 	
 	// Call OpenAI API
-	completion, err := a.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:       a.config.Model,
-		Messages:    messages,
-		Temperature: float32(a.config.Temperature),
-		MaxTokens:   a.config.MaxTokens,
+	completion, err := a.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Model:       openai.String(a.config.Model),
+		Messages:    openai.F(messages),
+		Temperature: openai.Float(a.config.Temperature),
+		MaxTokens:   openai.Int(int64(a.config.MaxTokens)),
 	})
 	
 	if err != nil {
@@ -332,14 +332,11 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 	return response, nil
 }
 
-func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessage string) []openai.ChatCompletionMessage {
-	var messages []openai.ChatCompletionMessage
+func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessage string) []openai.ChatCompletionMessageParamUnion {
+	var messages []openai.ChatCompletionMessageParamUnion
 	
 	// Add system prompt
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleSystem,
-		Content: a.config.SystemPrompt,
-	})
+	messages = append(messages, openai.SystemMessage(a.config.SystemPrompt))
 	
 	// Add conversation history from memory
 	if a.memory != nil {
@@ -347,14 +344,12 @@ func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessa
 		recent, err := a.memory.GetRecentMessages(ctx, sessionID, 10)
 		if err == nil {
 			for _, msg := range recent {
-				role := openai.ChatMessageRoleUser
-				if msg.Role == "assistant" {
-					role = openai.ChatMessageRoleAssistant
+				switch msg.Role {
+				case "user":
+					messages = append(messages, openai.UserMessage(msg.Content))
+				case "assistant":
+					messages = append(messages, openai.AssistantMessage(msg.Content))
 				}
-				messages = append(messages, openai.ChatCompletionMessage{
-					Role:    role,
-					Content: msg.Content,
-				})
 			}
 		}
 		
@@ -367,19 +362,13 @@ func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessa
 				for _, result := range results {
 					contextMsg += fmt.Sprintf("- %s\n", result.Message.Content)
 				}
-				messages = append(messages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: contextMsg,
-				})
+				messages = append(messages, openai.SystemMessage(contextMsg))
 			}
 		}
 	}
 	
 	// Add current message
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleUser,
-		Content: currentMessage,
-	})
+	messages = append(messages, openai.UserMessage(currentMessage))
 	
 	return messages
 }
