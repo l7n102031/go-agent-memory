@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 	"time"
-	
+
 	memory "github.com/framehood/go-agent-memory"
 )
 
@@ -16,65 +16,65 @@ func main() {
 	fmt.Println("📝 Auto-Summarization Memory Example")
 	fmt.Println("=====================================")
 	fmt.Println()
-	
+
 	// Check for required environment variables
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
 	}
-	
+
 	openAIKey := os.Getenv("OPENAI_API_KEY")
 	if openAIKey == "" {
 		log.Fatal("OPENAI_API_KEY is required for summarization")
 	}
-	
+
 	// Create configuration with auto-summarization
 	config := memory.Config{
 		Mode:              memory.PERSISTENT,
 		EnablePersistence: true,
-		
+
 		// Enable auto-summarization
 		EnableAutoSummarize: true,
-		SummarizeThreshold:  10,    // Summarize after 10 messages
-		SummarizeMaxTokens:  500,   // Target summary length
+		SummarizeThreshold:  10,              // Summarize after 10 messages
+		SummarizeMaxTokens:  500,             // Target summary length
 		SummarizeModel:      "gpt-3.5-turbo", // Model for summarization
-		
+
 		// Database and OpenAI
 		DatabaseURL: dbURL,
 		OpenAIKey:   openAIKey,
-		
+
 		// Optional Redis
 		RedisAddr: os.Getenv("REDIS_URL"),
-		
+
 		// Memory management
-		MaxSessionMessages: 50,     // Keep recent messages
-		ArchiveOldMessages: true,   // Archive before summarizing
+		MaxSessionMessages: 50,   // Keep recent messages
+		ArchiveOldMessages: true, // Archive before summarizing
 	}
-	
+
 	// Initialize memory
 	mem, err := memory.NewWithConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to initialize memory: %v", err)
 	}
 	defer mem.Close()
-	
+
 	fmt.Println("✅ Memory initialized with auto-summarization")
 	fmt.Printf("   Summarize after: %d messages\n", config.SummarizeThreshold)
 	fmt.Printf("   Summary model: %s\n", config.SummarizeModel)
 	fmt.Printf("   Target tokens: %d\n", config.SummarizeMaxTokens)
 	fmt.Println()
-	
+
 	ctx := context.Background()
-	
+
 	// Demonstrate summarization process
 	demonstrateSummarization(ctx, mem, config)
-	
+
 	// Show token savings
 	showTokenSavings(ctx, mem)
-	
+
 	// Demonstrate summary retrieval
 	demonstrateSummaryRetrieval(ctx, mem)
-	
+
 	fmt.Println("✨ Example completed successfully!")
 	fmt.Println()
 	fmt.Println("📚 Next steps:")
@@ -86,16 +86,16 @@ func demonstrateSummarization(ctx context.Context, mem memory.Memory, config mem
 	fmt.Println("🔄 Demonstrating Auto-Summarization Process")
 	fmt.Println("════════════════════════════════════════════")
 	fmt.Println()
-	
+
 	sessionID := "long-conversation"
-	
+
 	// Phase 1: Build up conversation
 	fmt.Println("📈 Phase 1: Adding messages to trigger summarization")
 	fmt.Println("─────────────────────────────────────────────────────")
-	
+
 	// Simulate a detailed technical discussion
 	conversation := generateLongConversation()
-	
+
 	for i, msg := range conversation {
 		err := mem.AddMessage(ctx, memory.Message{
 			ID:        fmt.Sprintf("msg-%d", i),
@@ -103,52 +103,52 @@ func demonstrateSummarization(ctx context.Context, mem memory.Memory, config mem
 			Content:   msg.content,
 			Timestamp: time.Now().Add(time.Duration(i) * time.Minute),
 			Metadata: memory.Metadata{
-				SessionID: sessionID,
+				SessionID:  sessionID,
 				TokenCount: estimateTokens(msg.content),
 			},
 		})
-		
+
 		if err != nil {
 			log.Printf("Error adding message: %v", err)
 			continue
 		}
-		
+
 		// Show progress
 		if (i+1)%5 == 0 {
 			stats, _ := mem.GetStats(ctx, sessionID)
 			fmt.Printf("   Messages: %d | Tokens: ~%d", i+1, stats.TotalTokens)
-			
-			if (i+1) == config.SummarizeThreshold {
+
+			if (i + 1) == config.SummarizeThreshold {
 				fmt.Print(" 🎯 [Threshold Reached - Triggering Summarization]")
 			}
 			fmt.Println()
 		}
-		
+
 		// Simulate real-time conversation
 		time.Sleep(100 * time.Millisecond)
 	}
-	
+
 	fmt.Println()
-	
+
 	// Phase 2: Check summarization results
 	fmt.Println("📊 Phase 2: Summarization Results")
 	fmt.Println("──────────────────────────────────")
-	
+
 	// Give async summarization time to complete
 	time.Sleep(2 * time.Second)
-	
+
 	stats, _ := mem.GetStats(ctx, sessionID)
-	
+
 	fmt.Printf("   Original messages: %d\n", len(conversation))
 	fmt.Printf("   Original tokens: ~%d\n", calculateTotalTokens(conversation))
 	fmt.Printf("   Active messages: %d\n", stats.SessionMessages)
 	fmt.Printf("   Summary created: %v\n", stats.HasSummary)
-	
+
 	if stats.HasSummary {
 		summary, err := mem.GetSummary(ctx, sessionID)
 		if err == nil {
 			fmt.Printf("   Summary tokens: ~%d\n", summary.TokenCount)
-			fmt.Printf("   Compression ratio: %.1fx\n", 
+			fmt.Printf("   Compression ratio: %.1fx\n",
 				float64(calculateTotalTokens(conversation))/float64(summary.TokenCount))
 			fmt.Println()
 			fmt.Println("📝 Generated Summary:")
@@ -163,7 +163,7 @@ func showTokenSavings(ctx context.Context, mem memory.Memory) {
 	fmt.Println("💰 Token Usage Optimization")
 	fmt.Println("════════════════════════════")
 	fmt.Println()
-	
+
 	// Simulate multiple sessions with different conversation lengths
 	sessions := []struct {
 		id       string
@@ -174,10 +174,10 @@ func showTokenSavings(ctx context.Context, mem memory.Memory) {
 		{"session-long", 50},
 		{"session-very-long", 100},
 	}
-	
+
 	totalOriginalTokens := 0
 	totalCompressedTokens := 0
-	
+
 	for _, session := range sessions {
 		// Add messages
 		originalTokens := 0
@@ -185,38 +185,38 @@ func showTokenSavings(ctx context.Context, mem memory.Memory) {
 			content := fmt.Sprintf("Message %d in %s with some content that uses tokens", i, session.id)
 			tokens := estimateTokens(content)
 			originalTokens += tokens
-			
+
 			mem.AddMessage(ctx, memory.Message{
 				ID:        fmt.Sprintf("%s-msg-%d", session.id, i),
 				Role:      alternateRole(i),
 				Content:   content,
 				Timestamp: time.Now(),
 				Metadata: memory.Metadata{
-					SessionID: session.id,
+					SessionID:  session.id,
 					TokenCount: tokens,
 				},
 			})
 		}
-		
+
 		// Get compressed size
 		stats, _ := mem.GetStats(ctx, session.id)
 		compressedTokens := stats.ActiveTokens // Tokens after summarization
-		
+
 		if compressedTokens == 0 {
 			compressedTokens = originalTokens // No compression for short sessions
 		}
-		
+
 		totalOriginalTokens += originalTokens
 		totalCompressedTokens += compressedTokens
-		
+
 		savings := originalTokens - compressedTokens
 		savingsPercent := float64(savings) / float64(originalTokens) * 100
-		
+
 		fmt.Printf("📊 %s:\n", session.id)
 		fmt.Printf("   Messages: %d\n", session.messages)
 		fmt.Printf("   Original: %d tokens\n", originalTokens)
 		fmt.Printf("   Compressed: %d tokens\n", compressedTokens)
-		
+
 		if savings > 0 {
 			fmt.Printf("   💰 Saved: %d tokens (%.1f%%)\n", savings, savingsPercent)
 		} else {
@@ -224,14 +224,14 @@ func showTokenSavings(ctx context.Context, mem memory.Memory) {
 		}
 		fmt.Println()
 	}
-	
+
 	// Total savings
 	totalSavings := totalOriginalTokens - totalCompressedTokens
 	totalSavingsPercent := float64(totalSavings) / float64(totalOriginalTokens) * 100
-	
+
 	fmt.Println("═══════════════════════════════")
 	fmt.Printf("🎯 Total Token Savings: %d (%.1f%%)\n", totalSavings, totalSavingsPercent)
-	
+
 	// Cost calculation
 	costPer1K := 0.002 // Example: $0.002 per 1K tokens
 	savedCost := float64(totalSavings) / 1000 * costPer1K
@@ -243,12 +243,12 @@ func demonstrateSummaryRetrieval(ctx context.Context, mem memory.Memory) {
 	fmt.Println("🔍 Summary Retrieval and Usage")
 	fmt.Println("════════════════════════════════")
 	fmt.Println()
-	
+
 	sessionID := "retrieval-demo"
-	
+
 	// Create a conversation that will be summarized
 	fmt.Println("Creating conversation with important details...")
-	
+
 	importantDetails := []message{
 		{"user", "My name is Alice and I work at TechCorp"},
 		{"assistant", "Nice to meet you, Alice from TechCorp!"},
@@ -268,7 +268,7 @@ func demonstrateSummaryRetrieval(ctx context.Context, mem memory.Memory) {
 		{"user", "Should we partition the table?"},
 		{"assistant", "Partitioning could help. Consider partitioning by date if you have time-based queries."},
 	}
-	
+
 	// Add messages
 	for i, msg := range importantDetails {
 		mem.AddMessage(ctx, memory.Message{
@@ -281,20 +281,20 @@ func demonstrateSummaryRetrieval(ctx context.Context, mem memory.Memory) {
 			},
 		})
 	}
-	
+
 	// Wait for summarization
 	time.Sleep(2 * time.Second)
-	
+
 	// Retrieve summary
 	fmt.Println("\n📋 Summary contains key information:")
 	fmt.Println("─────────────────────────────────────")
-	
+
 	summary, err := mem.GetSummary(ctx, sessionID)
 	if err != nil {
 		fmt.Println("No summary available yet")
 		return
 	}
-	
+
 	// Check if important details are preserved
 	importantKeywords := []string{
 		"Alice",
@@ -305,11 +305,11 @@ func demonstrateSummaryRetrieval(ctx context.Context, mem memory.Memory) {
 		"PostgreSQL",
 		"50 million rows",
 	}
-	
+
 	fmt.Printf("Summary (%d tokens):\n", summary.TokenCount)
 	fmt.Println(summary.Content)
 	fmt.Println()
-	
+
 	fmt.Println("✅ Preserved Important Details:")
 	for _, keyword := range importantKeywords {
 		if contains(summary.Content, keyword) {
@@ -319,11 +319,11 @@ func demonstrateSummaryRetrieval(ctx context.Context, mem memory.Memory) {
 		}
 	}
 	fmt.Println()
-	
+
 	// Show how summary is used in context
 	fmt.Println("🔄 Using Summary in New Context:")
 	fmt.Println("─────────────────────────────────")
-	
+
 	fmt.Println("When user returns to conversation, the summary provides context:")
 	fmt.Println()
 	fmt.Println("System: [Previous conversation summary included in context]")
@@ -396,7 +396,7 @@ func truncate(s string, maxLen int) string {
 }
 
 func contains(text, keyword string) bool {
-	return len(keyword) > 0 && len(text) > 0 && 
+	return len(keyword) > 0 && len(text) > 0 &&
 		(text == keyword || len(text) > len(keyword))
 }
 
