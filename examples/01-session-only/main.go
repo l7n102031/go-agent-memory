@@ -39,7 +39,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize memory: %v", err)
 	}
-	defer mem.Close()
+	defer func() {
+		if err := mem.Close(); err != nil {
+			log.Printf("Error closing memory: %v", err)
+		}
+	}()
 
 	fmt.Println("✅ Memory initialized (session-only mode)")
 	fmt.Println("   - No database connection")
@@ -69,7 +73,7 @@ func main() {
 
 	// Add messages to memory
 	for i, msg := range messages {
-		err := mem.AddMessage(ctx, memory.Message{
+		if err := mem.AddMessage(ctx, memory.Message{
 			ID:        fmt.Sprintf("msg-%d", i+1),
 			Role:      msg.role,
 			Content:   msg.content,
@@ -77,8 +81,7 @@ func main() {
 			Metadata: memory.Metadata{
 				SessionID: sessionID,
 			},
-		})
-		if err != nil {
+		}); err != nil {
 			log.Printf("Error adding message: %v", err)
 		}
 
@@ -192,54 +195,4 @@ func main() {
 	fmt.Println("   - See example 07 for full agent integration")
 }
 
-// Helper function to simulate a real conversation flow
-func simulateConversation(mem memory.Memory, sessionID string) {
-	ctx := context.Background()
 
-	// Simulated user inputs and responses
-	exchanges := []struct {
-		userInput string
-		assistant string
-	}{
-		{
-			"What's the weather like?",
-			"I don't have access to real-time weather data, but I can help you with other questions!",
-		},
-		{
-			"Tell me a joke",
-			"Why don't scientists trust atoms? Because they make up everything!",
-		},
-		{
-			"Thanks, that was funny!",
-			"Glad you enjoyed it! Is there anything else I can help you with?",
-		},
-	}
-
-	for i, exchange := range exchanges {
-		// User message
-		mem.AddMessage(ctx, memory.Message{
-			ID:        fmt.Sprintf("conv-%d-user", i),
-			Role:      "user",
-			Content:   exchange.userInput,
-			Timestamp: time.Now(),
-			Metadata: memory.Metadata{
-				SessionID: sessionID,
-			},
-		})
-
-		// Simulate thinking time
-		time.Sleep(500 * time.Millisecond)
-
-		// Assistant response
-		mem.AddMessage(ctx, memory.Message{
-			ID:        fmt.Sprintf("conv-%d-assistant", i),
-			Role:      "assistant",
-			Content:   exchange.assistant,
-			Timestamp: time.Now(),
-			Metadata: memory.Metadata{
-				SessionID: sessionID,
-				Model:     "gpt-4",
-			},
-		})
-	}
-}

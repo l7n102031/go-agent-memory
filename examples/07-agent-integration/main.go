@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 	"time"
-	
+
 	memory "github.com/framehood/go-agent-memory"
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/option"
@@ -67,7 +67,7 @@ func initializeAgent() (*Agent, error) {
 	if openAIKey == "" {
 		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is required")
 	}
-	
+
 	// Create OpenAI client
 	client := openai.NewClient(
 		option.WithAPIKey(openAIKey),
@@ -79,7 +79,7 @@ func initializeAgent() (*Agent, error) {
 		memoryMode = "none"
 	}
 
-		// Create agent configuration
+	// Create agent configuration
 	config := AgentConfig{
 		Model:         MODEL,
 		Temperature:   TEMPERATURE,
@@ -88,7 +88,7 @@ func initializeAgent() (*Agent, error) {
 		MemoryEnabled: memoryMode != "none",
 		MemoryMode:    memoryMode,
 	}
-	
+
 	// Initialize agent
 	agent := &Agent{
 		client: client,
@@ -292,10 +292,10 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 			},
 		})
 	}
-	
+
 	// Build conversation context
 	messages := a.buildContext(ctx, sessionID, userMessage)
-	
+
 	// Call OpenAI API
 	completion, err := a.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:       openai.ChatModel(a.config.Model),
@@ -303,18 +303,18 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 		Temperature: openai.Float(a.config.Temperature),
 		MaxTokens:   openai.Int(int64(a.config.MaxTokens)),
 	})
-	
+
 	if err != nil {
 		return "", fmt.Errorf("OpenAI API error: %w", err)
 	}
-	
+
 	// Get response
 	if len(completion.Choices) == 0 {
 		return "", fmt.Errorf("no response from model")
 	}
-	
+
 	response := completion.Choices[0].Message.Content
-	
+
 	// Store assistant response in memory
 	if a.memory != nil {
 		a.memory.AddMessage(ctx, memory.Message{
@@ -328,16 +328,16 @@ func (a *Agent) Chat(ctx context.Context, sessionID string, userMessage string) 
 			},
 		})
 	}
-	
+
 	return response, nil
 }
 
 func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessage string) []openai.ChatCompletionMessageParamUnion {
 	var messages []openai.ChatCompletionMessageParamUnion
-	
+
 	// Add system prompt
 	messages = append(messages, openai.SystemMessage(a.config.SystemPrompt))
-	
+
 	// Add conversation history from memory
 	if a.memory != nil {
 		// Get recent messages
@@ -352,7 +352,7 @@ func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessa
 				}
 			}
 		}
-		
+
 		// Search for relevant context (if semantic search is enabled)
 		if a.config.MemoryMode == "persistent" || a.config.MemoryMode == "hybrid" {
 			results, err := a.memory.Search(ctx, currentMessage, 3, 0.75)
@@ -366,10 +366,10 @@ func (a *Agent) buildContext(ctx context.Context, sessionID string, currentMessa
 			}
 		}
 	}
-	
+
 	// Add current message
 	messages = append(messages, openai.UserMessage(currentMessage))
-	
+
 	return messages
 }
 
