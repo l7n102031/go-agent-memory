@@ -1,4 +1,4 @@
-module github.com/kshidenko/go-agent-memory
+module github.com/framehood/go-agent-memory
 
 go 1.22
 

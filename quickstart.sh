@@ -29,7 +29,7 @@ echo ""
 
 # Install the module
 echo "📦 Installing go-agent-memory module..."
-go get github.com/kshidenko/go-agent-memory
+go get github.com/framehood/go-agent-memory
 echo "✅ Module installed"
 echo ""
 
@@ -44,7 +44,7 @@ import (
     "os"
     "time"
     
-    memory "github.com/kshidenko/go-agent-memory"
+    memory "github.com/framehood/go-agent-memory"
 )
 
 func main() {
@@ -124,7 +124,7 @@ echo ""
 echo "📚 Next steps:"
 echo "   1. Check memory_integration.go for the example code"
 echo "   2. Copy the integration code to your agent"
-echo "   3. Read the documentation at: https://github.com/kshidenko/go-agent-memory"
+echo "   3. Read the documentation at: https://github.com/framehood/go-agent-memory"
 echo ""
 echo "💡 Tip: For faster performance, set up Redis:"
 echo "   export REDIS_URL='localhost:6379'"

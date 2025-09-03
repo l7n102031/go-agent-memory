@@ -1,8 +1,8 @@
 # Go Agent Memory 🧠
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/kshidenko/go-agent-memory.svg)](https://pkg.go.dev/github.com/kshidenko/go-agent-memory)
+[![Go Reference](https://pkg.go.dev/badge/github.com/framehood/go-agent-memory.svg)](https://pkg.go.dev/github.com/framehood/go-agent-memory)
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kshidenko/go-agent-memory)](https://goreportcard.com/report/github.com/kshidenko/go-agent-memory)
+[![Go Report Card](https://goreportcard.com/badge/github.com/framehood/go-agent-memory)](https://goreportcard.com/report/github.com/framehood/go-agent-memory)
 
 A modular, production-ready memory system for AI agents with semantic search capabilities. Uses **Supabase** (PostgreSQL + pgvector) for long-term semantic memory and optional **Redis** for blazing-fast session caching.
 
@@ -20,7 +20,7 @@ A modular, production-ready memory system for AI agents with semantic search cap
 ### 1. Install the Package
 
 ```bash
-go get github.com/kshidenko/go-agent-memory
+go get github.com/framehood/go-agent-memory
 ```
 
 ### 2. Set Up Supabase
@@ -42,7 +42,7 @@ import (
     "fmt"
     "log"
     
-    memory "github.com/kshidenko/go-agent-memory"
+    memory "github.com/framehood/go-agent-memory"
 )
 
 func main() {
@@ -95,7 +95,7 @@ import (
     "context"
     "os"
     
-    memory "github.com/kshidenko/go-agent-memory"
+    memory "github.com/framehood/go-agent-memory"
     "github.com/openai/openai-go/v2"
 )
 
@@ -355,5 +355,5 @@ MIT License - feel free to use in your projects!
 
 ## Support 💬
 
-- Issues: [GitHub Issues](https://github.com/kshidenko/go-agent-memory/issues)
-- Discussions: [GitHub Discussions](https://github.com/kshidenko/go-agent-memory/discussions)
+- Issues: [GitHub Issues](https://github.com/framehood/go-agent-memory/issues)
+- Discussions: [GitHub Discussions](https://github.com/framehood/go-agent-memory/discussions)
