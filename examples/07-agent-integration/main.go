@@ -100,7 +100,7 @@ func initializeAgent() (*Agent, error) {
 		mem, err := initializeMemory(memoryMode)
 		if err != nil {
 			fmt.Printf("⚠️  Memory initialization failed: %v\n", err)
-			fmt.Println("   Continuing without memory...\n")
+			fmt.Println("   Continuing without memory...")
 			agent.config.MemoryEnabled = false
 		} else {
 			agent.memory = mem
@@ -241,7 +241,7 @@ func (a *Agent) handleCommand(ctx context.Context, sessionID string, command str
 		fmt.Println("  /search <query>- Search conversation history")
 		fmt.Println("  /clear         - Clear current session")
 		fmt.Println("  /help          - Show this help")
-		fmt.Println("  /exit          - Exit the agent\n")
+		fmt.Println("  /exit          - Exit the agent")
 
 	case "/memory":
 		if a.memory == nil {
